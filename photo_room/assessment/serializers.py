@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import CustomUser
+from .models import CustomUser, ColorPalette, Color
 from django.contrib.auth import authenticate
 
 from rest_framework import serializers
@@ -45,3 +45,18 @@ class LoginSerializer(serializers.Serializer):
             raise serializers.ValidationError(msg, code="authorization")
         attrs["user"] = user
         return attrs
+
+
+class ColorSerializer(serializers.ModelSerializer):
+    class Meta:
+        model= Color
+        fields = ('id', 'hex_code')
+
+
+class ColorPaletteSerializer(serializers.ModelSerializer):
+    colors = ColorSerializer(many=True, read_only=True)
+    created_by = UserSerializer(read_only=True)
+    class Meta:
+        model = ColorPalette
+        fields = ('id', 'name', 'colors', 'created_by')
+

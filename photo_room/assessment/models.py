@@ -34,6 +34,7 @@ class BaseModel(models.Model):
 
 class CustomUser(AbstractUser, BaseModel):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    teams = models.ManyToManyField('Team', through="TeamMembership")
 
     class Meta:
         verbose_name = _("User")
@@ -41,3 +42,34 @@ class CustomUser(AbstractUser, BaseModel):
 
     def __str__(self):
         return f'{self.email}'
+
+
+class ColorPalette(BaseModel):
+    id = models.UUIDField(editable=False, default=uuid.uuid4, primary_key=True)
+    name = models.CharField(max_length=100, unique=True, null=True)
+    colors = models.ManyToManyField('Color')
+    created_by = models.ForeignKey('CustomUser', on_delete=models.CASCADE)
+    
+    def __str__(self) -> str:
+        colors = ''.join(str(color) for color in self.colors.all())
+        return f'Name: {self.name} - Colors: {colors})'
+
+class Color(BaseModel):
+    id = models.UUIDField(editable=False, default=uuid.uuid4, primary_key=True)
+    hex_code = models.CharField(max_length=7, default="#ffffff", unique=True)
+
+    def __str__(self) -> str:
+        return self.hex_code
+
+class Team(BaseModel):
+    id = models.UUIDField(editable=False, default=uuid.uuid4, primary_key=True)
+    name = models.CharField(max_length=100, unique=True, null=True)
+    color_palettes = models.ManyToManyField('ColorPalette', through="TeamPalette")
+
+class TeamMembership(BaseModel):
+    user = models.ForeignKey('CustomUser', on_delete=models.CASCADE)
+    team = models.ForeignKey('Team', on_delete=models.CASCADE)
+
+class TeamPalette(BaseModel):
+    palette = models.ForeignKey('ColorPalette', on_delete=models.CASCADE)
+    team = models.ForeignKey('Team', on_delete=models.CASCADE)
