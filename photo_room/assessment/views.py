@@ -16,6 +16,7 @@ from rest_framework.decorators import (
 )
 from rest_framework.permissions import AllowAny
 from .serializers import *
+from django.db.models import Q
 
 class UserCreate(generics.CreateAPIView):
     queryset = CustomUser.objects.all()
@@ -54,15 +55,19 @@ def create_color_palette(request):
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def list_color_palettes(request):
+    """
+    List all color palettes that a user either created or that are assigned to the team that the user belongs to.
+    """
     if request.method == 'GET':
-        my_palettes = ColorPalette.objects.filter(created_by=request.user).prefetch_related('colors')
+        team_palettes = TeamMembership.objects.filter(user=request.user).values('team__color_palettes')
+        my_palettes = ColorPalette.objects.filter(Q(created_by=request.user) | Q(id__in=team_palettes)).prefetch_related('colors')
         serializer = ColorPaletteSerializer(instance=my_palettes, many=True)
         data = serializer.data
         return Response(data, status=status.HTTP_200_OK)
 
 
 @api_view(['POST'])
-@permission_classes([AllowAny])
+@permission_classes([IsAuthenticated])
 def create_team(request):
     if request.method == 'POST':
         name = request.data['name']
@@ -72,7 +77,7 @@ def create_team(request):
         return Response(data, status=status.HTTP_201_CREATED)
 
 @api_view(['POST'])
-@permission_classes([AllowAny])
+@permission_classes([IsAuthenticated])
 def join_team(request):
     if request.method == 'POST':
         id = request.data['id']
@@ -87,7 +92,7 @@ def join_team(request):
 
 
 @api_view(['GET'])
-@permission_classes([AllowAny])
+@permission_classes([IsAuthenticated])
 def list_teams(request):
     if request.method == 'GET':
         user = request.user
@@ -102,7 +107,7 @@ def list_teams(request):
 
 
 @api_view(['POST'])
-@permission_classes([AllowAny])
+@permission_classes([IsAuthenticated])
 def assign_palette_to_team(request):
     if request.method == 'POST':
         palette_id = request.data['palette_id']
