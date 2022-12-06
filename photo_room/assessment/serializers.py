@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import CustomUser, ColorPalette, Color
+from .models import CustomUser, ColorPalette, Color, Team, TeamMembership
 from django.contrib.auth import authenticate
 
 from rest_framework import serializers
@@ -8,7 +8,7 @@ from rest_framework import serializers
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = CustomUser
-        fields = ("email", "password")
+        fields = ("id", "email", "password")
         extra_kwargs = {"password": {"write_only": True}}
 
     def create(self, validated_data):
@@ -60,3 +60,13 @@ class ColorPaletteSerializer(serializers.ModelSerializer):
         model = ColorPalette
         fields = ('id', 'name', 'colors', 'created_by')
 
+
+class TeamSerializer(serializers.ModelSerializer):
+    members = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Team
+        fields = ('id', 'name', 'color_palettes', 'members')
+
+    def get_members(self, instance):
+        return UserSerializer(instance=CustomUser.objects.filter(id__in=TeamMembership.objects.filter(team=instance).values('user')), many=True).data
